@@ -21,7 +21,7 @@ apt update -y  # 升级 packages
 ```
 
 ```
-apt install wget curl sudo vim git -y  # Debian 系统比较干净，安装常用的软件
+apt install wget curl sudo vim git nano -y  # Debian 系统比较干净，安装常用的软件
 ```
 
 # 安装Docker环境
@@ -123,7 +123,25 @@ cd /root/data/docker_data/npm
 ```
 
 ```
+nano docker-compose.yml
+```
 
+```
+version: '3'
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'  # 冒号左边可以改成自己服务器未被占用的端口
+      - '81:81'  # 冒号左边可以改成自己服务器未被占用的端口
+      - '443:443' # 冒号左边可以改成自己服务器未被占用的端口
+    volumes:
+      - ./data:/data # 冒号左边可以改路径，现在是表示把数据存放在在当前文件夹下的 data 文件夹中
+      - ./letsencrypt:/etc/letsencrypt  # 冒号左边可以改路径，现在是表示把数据存放在在当前文件夹下的 letsencrypt 文件夹中
+```	  
+
+保存：1.`Ctrl+X` 2.`Y`  3.`Enter`
 
 
 
