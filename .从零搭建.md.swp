@@ -141,7 +141,12 @@ services:
       - ./letsencrypt:/etc/letsencrypt  # 冒号左边可以改路径，现在是表示把数据存放在在当前文件夹下的 letsencrypt 文件夹中
 ```	  
 
-保存：1.`Ctrl+X` 2.`Y`  3.`Enter`
+保存：
+1. `Ctrl+X`  
+2. `Y`  
+3. `Enter`  
+
+
 
 
 
