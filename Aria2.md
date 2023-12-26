@@ -7,7 +7,6 @@ sudo docker pull p3terx/aria2-pro
 
 ## 2.准备工作
 ### 2.1 创建映射的日志
-日志
 ```
 mkdir -p /usr/share/docker-data/aria2
 ```
