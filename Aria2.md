@@ -74,4 +74,5 @@ https://hub.docker.com/r/iuboy/aria2ng
 
 ```
 docker run -d \--restart=always \--name aria2ng \-p 6801:8080 iuboy/aria2ng:latest
+# 直接执行
 ```
