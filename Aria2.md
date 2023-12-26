@@ -67,4 +67,13 @@ docker-compose up -d
 ```
 
 
+# Aria2ng
+镜像网址
+```
+https://hub.docker.com/r/iuboy/aria2ng
+```
 
+```
+docker run -d \--restart=always \--name aria2ng \-p 6801:8080 iuboy/aria2ng:latest![image](https://github.com/primeyoung/Docker_study/assets/48234143/50f55cf1-da03-45b6-b961-1a34f36ab2c5)
+
+```
