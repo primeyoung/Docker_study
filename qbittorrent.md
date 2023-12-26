@@ -23,23 +23,23 @@ nano docker-compose.yml
 ```
 
 ```
-version: "2.1" 
-services: 
-  qbittorrent: 
+version: "2.1"
+services:
+  qbittorrent:
     image:  lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent 
-    environment: 
-      - PUID=0 
+    container_name: qbittorrent
+    environment:
+      - PUID=0
       - PGID=0
       - TZ=Asia/Shanghai
       - UMASK_SET=022
-      - WEBUI_PORT=9600    #9600是管理页面端口
+      - WEBUI_PORT=9600   # 9600是管理页面端口
     volumes:
-      - /usr/share/docker-data/qbittorrent:/config                
-      - /usr/share/Downloads:/downloads       
-    ports:  
+      - /usr/share/docker-data/qbittorrent:/config       
+      - /usr/share/Downloads:/downloads
+    ports:
       # 映射下载端口与内部下载端口,后面可改。
-      - 6881:6881        
+      - 6881:6881
       - 6881:6881/udp
       - 9600:8080
     restart: unless-stopped
