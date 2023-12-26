@@ -44,3 +44,7 @@ services:
       - 9600:8080
     restart: unless-stopped
 ```
+
+```
+docker-compose up -d
+```
