@@ -35,7 +35,7 @@ services:
       - UMASK_SET=022
       - WEBUI_PORT=9600   # 9600是管理页面端口
     volumes:
-      - /usr/share/docker-data/qbittorrent:/config       
+      - /usr/share/docker-data/qbittorrent:/config
       - /usr/share/Downloads:/downloads
     ports:
       # 映射下载端口与内部下载端口,后面可改。
