@@ -50,9 +50,9 @@ docker-compose up -d
 ```
 
 ## 备注：账号还是默认admin，但是密码需要从日志里面看一下随机生成的密码
-<img width="210" alt="qb1" src="https://github.com/primeyoung/Docker_study/assets/48234143/c5eea276-1134-4288-a2aa-c3ed30fb8a0f">
----
-<img width="493" alt="qb2" src="https://github.com/primeyoung/Docker_study/assets/48234143/e96d0e89-48b7-47d8-97e2-3d2737d744ba">
----
-<img width="605" alt="qb3" src="https://github.com/primeyoung/Docker_study/assets/48234143/045ebada-0fee-4e15-a94d-56dc2c7f20af">
+* <img width="210" alt="qb1" src="https://github.com/primeyoung/Docker_study/assets/48234143/c5eea276-1134-4288-a2aa-c3ed30fb8a0f">  
+
+* <img width="493" alt="qb2" src="https://github.com/primeyoung/Docker_study/assets/48234143/e96d0e89-48b7-47d8-97e2-3d2737d744ba">  
+
+* <img width="605" alt="qb3" src="https://github.com/primeyoung/Docker_study/assets/48234143/045ebada-0fee-4e15-a94d-56dc2c7f20af">
 
