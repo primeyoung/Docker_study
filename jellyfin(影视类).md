@@ -19,6 +19,7 @@ mkdir -p /usr/share/Downloads/mv
 mkdir -p /usr/share/Downloads/tv
 ```
 
+漫画目录
 ```
 mkdir -p /usr/share/Downloads/comics
 ```
