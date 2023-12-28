@@ -56,3 +56,5 @@ services:
 ```
 docker-compose up -d
 ```
+
+## 注：访问端口没修改的话，就是默认8096
