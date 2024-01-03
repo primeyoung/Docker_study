@@ -35,3 +35,7 @@ services:
       - 18989:8989
     restart: unless-stopped
 ```
+
+```
+docker-compose.yml up -d
+```
