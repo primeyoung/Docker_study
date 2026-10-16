@@ -1,0 +1,8 @@
+# 开源地址：https://github.com/istoreos
+
+sh -c "$(curl -ksS https://githubusercontent.com)"
+
+sh -c "$(curl -ksS https://jsdelivr.net)"
+
+
+或则手动上传
