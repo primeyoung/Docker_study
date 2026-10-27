@@ -22,19 +22,19 @@ texinfo u-boot-tools upx-ucl unzip vim wget xmlto xz-utils zlib1g-dev apktool
 
 #### 克隆源码
 ```
-sudo git clone https://github.com/immortalwrt/immortalwrt.git
-sudo cd immortalwrt
+git clone https://github.com/immortalwrt/immortalwrt.git
+cd immortalwrt
 ```
 
 #### 分支切换
 ```
-sudo git checkout openwrt-25.12
+git checkout openwrt-25.12
 ```
 
 #### 更新
 ```
-sudo ./scripts/feeds update -a
-sudo ./scripts/feeds install -a
+./scripts/feeds update -a
+./scripts/feeds install -a
 ```
 
 ### 第三阶段：配置电犀牛 R68S 专属固件参数
