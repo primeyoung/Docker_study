@@ -22,7 +22,7 @@ texinfo u-boot-tools upx-ucl unzip vim wget xmlto xz-utils zlib1g-dev apktool
 
 #### 克隆源码
 ```
-sudo git clone [https://github.com](https://github.com/immortalwrt/immortalwrt.git)
+sudo git clone https://github.com/immortalwrt/immortalwrt.git
 sudo cd immortalwrt
 ```
 
