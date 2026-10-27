@@ -5,6 +5,7 @@
 固件地址：https://github.com/immortalwrt/immortalwrt
 ```
 
+
 ### 第一阶段：搭建编译环境
 ```
 sudo apt update -y && sudo apt upgrade -y
@@ -21,7 +22,7 @@ texinfo u-boot-tools upx-ucl unzip vim wget xmlto xz-utils zlib1g-dev apktool
 
 #### 克隆源码
 ```
-sudo git clone https://github.com
+sudo git clone [https://github.com](https://github.com/immortalwrt/immortalwrt.git)
 sudo cd immortalwrt
 ```
 
