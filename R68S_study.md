@@ -1,72 +1,82 @@
 # 开源地址：https://github.com/istoreos
 
-## 方案1：软件中心解锁
-
-1.  登录 iStoreOS 后台，点击左侧导航栏的 “终端”（或者通过 SSH 工具连接软路由）。
-2.  输入以下一键解锁命令并回车（此命令目前最常用，集成了热门的科学上网插件）：
+## 编译
 ```
-sh -c "$(curl -ksS https://githubusercontent.com)"
+固件地址：https://github.com/immortalwrt/immortalwrt
 ```
 
+### 第一阶段：搭建编译环境
 ```
-sh -c "$(curl -ksS https://jsdelivr.net)"
-```
-
-## 方案2：手动上传
-或则手动上传.ipk的安装包
-
-### 1、OpenWrt-nikki
-从软件源安装
-#### 添加源
-```
-# 只需运行一次
-wget -O - https://github.com/nikkinikki-org/OpenWrt-nikki/raw/refs/heads/main/feed.sh | ash
+sudo apt update -y && sudo apt upgrade -y
+sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
+git gperf haveged lzma lcmfg ncurses-dev libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
+libmpc-dev libmpfr-dev libmsvcrt-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev \
+libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3 \
+python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig \
+texinfo u-boot-tools upx-ucl unzip vim wget xmlto xz-utils zlib1g-dev apktool
 ```
 
-#### 安装
+### 第二阶段：获取 ImmortalWrt 源码与分支切换
+
+#### 克隆源码
 ```
-# 你可以从 shell 执行命令安装或者从 LuCI 的`软件包`菜单安装
-# for opkg
-opkg install nikki
-opkg install luci-app-nikki
-opkg install luci-i18n-nikki-zh-cn
-# for apk
-apk add nikki
-apk add luci-app-nikki
-apk add luci-i18n-nikki-zh-cn
+sudo git clone https://github.com
+sudo cd immortalwrt
 ```
 
-#### 卸载并重置
+#### 分支切换
 ```
-wget -O - https://github.com/nikkinikki-org/OpenWrt-nikki/raw/refs/heads/main/uninstall.sh | ash
-```
-
-如果软件源安装方案不行，再试发行版
-```
-wget -O - https://github.com/nikkinikki-org/OpenWrt-nikki/raw/refs/heads/main/install.sh | ash
+sudo git checkout openwrt-25.12
 ```
 
-## 方案3：添加仓库源
-1.登录 iStoreOS 后台，进入 “系统” -> “软件包”。
-
-2.点击 “配置 opkg”。
-
-3.在“自定义软件源（Custom feeds）”的最下方，另起一行，把 Kenzok8 维护的国内加速流媒体/插件源粘贴进去（它会自动识别你的 R68S 是 ARM64 架构并匹配）：
+#### 更新
 ```
-src/gz kenzok8_packages https://mpdn.fun
+sudo ./scripts/feeds update -a
+sudo ./scripts/feeds install -a
 ```
 
-4.点击保存。回到软件包页面，点击 “更新列表”。
-
-5.在下面的搜索框里搜 luci-app-homeproxy 或 luci-app-openclash，点击安装，系统就会100%自动下载符合 R68S（ARM64）框架的核心和所有依赖，比你手动下载 .ipk 上传安全得多
-
-上述是ai给出方案，也可以按照仓库给的一键命令
+### 第三阶段：配置电犀牛 R68S 专属固件参数
 ```
-sed -i '1i src-git kenzo https://github.com/kenzok8/openwrt-packages' feeds.conf.default
-sed -i '2i src-git small https://github.com/kenzok8/small' feeds.conf.default
-./scripts/feeds update -a && rm -rf feeds/luci/applications/luci-app-mosdns
-rm -rf feeds/packages/net/{alist,adguardhome,mosdns,xray*,v2ray*,sing*,smartdns} feeds/packages/utils/v2dat feeds/packages/lang/golang
-git clone https://github.com/kenzok8/golang -b 1.26 feeds/packages/lang/golang
-./scripts/feeds install -a
 make menuconfig
 ```
+
+在图形化界面中，针对电犀牛 R68S 芯片与型号进行精准勾选（使用键盘空格键选中）：
+1. Target System (目标系统) → 选择 Rockchip
+2. Subtarget (子目标机器架构) → 选择 ARMv8 64-bit machines
+3. Target Profile (设备型号目标) → 寻找并选择 FastRhino R68S（电犀牛官方英文名称为 FastRhino）
+4. Target Images (固件镜像格式) → 建议确保勾选了 squashfs（如果你需要安装到 eMMC 或外置存储，也可以顺便勾选 ext4）
+可选配置（LuCI 插件）：
+• 进入 LuCI → Applications。
+• ImmortalWrt 25.12 拥有针对国内环境优化的全新插件（如 luci-app-mihomo / luci-app-homeproxy 等现代科学上网核心组件）。由于 R68S 拥有 4GB DDR4 内存和强劲的 RK3568 CPU，你可以放心勾选各类重度插件。
+配置完成后，按左右方向键选择 Save，保存为 .config 退出
+
+### 第四阶段：下载依赖与首次单线程编译
+#### 预下载源码包 (DL库)：
+```
+sudo make download -j$(nproc)
+```
+
+#### 首次编译（由于 25.12 采用了全新内核和 apk 包管理器机制，强烈建议首次使用单线程）：
+```
+sudo make -j1 V=s
+```
+时间会很久，可能几小时
+
+后续如果进行二次修改编译，可以使用多线程提速：
+```
+make -j$(nproc)
+```
+
+### 编译后
+编译完成后，你的电犀牛 R68S 固件会存放在：
+📂 bin/targets/rockchip/armv8/
+
+
+
+
+
+
+
+
+
