@@ -55,12 +55,12 @@ make menuconfig
 ### 第四阶段：下载依赖与首次单线程编译
 #### 预下载源码包 (DL库)：
 ```
-sudo make download -j$(nproc)
+make download -j$(nproc)
 ```
 
 #### 首次编译（由于 25.12 采用了全新内核和 apk 包管理器机制，强烈建议首次使用单线程）：
 ```
-sudo make -j1 V=s
+make -j1 V=s
 ```
 时间会很久，可能几小时
 
