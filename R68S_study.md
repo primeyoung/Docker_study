@@ -68,18 +68,10 @@ make download -j$(nproc)
 ## 下载脚本加速
 
 ```
-git clone https://github.com/slobys/openclash-auto-installer.git
+git clone https://github.com/slobys/openclash-auto-installer.git && cd openclash-auto-installer && sh menu.sh
 ```
 
-进入目录
-```
-cd openclash-auto-installer/
-```
-
-赋权打开
-```
-chmod +x openclash-menu && openclash-menu
-```
+或则走加速
 
 
 
