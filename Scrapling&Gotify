@@ -1,0 +1,223 @@
+🛒 电商价格监控系统（全平台通用版）统一开发规范文档
+
+
+1. 跨平台运行与多环境切换（Windows / Linux / Docker）
+
+系统通过 ENV_MODE（区分本地/云端）和 RUN_PLATFORM（区分系统架构）进行双维度动态调节。
+
+⚙️ 环境配置文件 (config.py)
+
+python
+import os
+import sys
+from pathlib import Path
+
+# 统一跨平台路径（使用 pathlib 自动适配 Windows '\' 与 Linux '/'）
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "data" / "monitor.db"
+COOKIE_PATH = BASE_DIR / "config" / "cookies_store.json"
+
+class Config:
+    GOTIFY_URL = os.getenv("GOTIFY_URL", "https://your-public-gotify-domain.com")
+    GOTIFY_TOKEN = os.getenv("GOTIFY_TOKEN", "your-app-token")
+    IGNORE_SSL_ERRORS = os.getenv("IGNORE_SSL_ERRORS", "True").lower() == "true"
+    
+    # 动态检测当前平台：WINDOWS, LINUX, DOCKER
+    if os.path.exists("/.dockerenv"):
+        PLATFORM = "DOCKER"
+    else:
+        PLATFORM = "WINDOWS" if sys.platform.startswith("win") else "LINUX"
+
+    # 环境模式调节：LOCAL (本地调试) 或 CLOUD (云端生产)
+    ENV_MODE = os.getenv("ENV_MODE", "LOCAL")
+
+    @classmethod
+    def get_browser_args(cls):
+        """生成跨平台、防爆内存的 Scrapling 隐形参数"""
+        flags = [
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-gpu"
+        ]
+        
+        # 容器及 Linux 云环境下的核心优化（2核4G VPS 内存守门员配置）
+        if cls.PLATFORM in ["DOCKER", "LINUX"] or cls.ENV_MODE == "CLOUD":
+            flags.extend([
+                "--disable-dev-shm-usage",     # 极其重要：防止容器/无界界面内共享内存写满崩溃
+                "--disable-software-rasterizer",
+                "--single-process"             # 2核4G 环境下，强制减少 Chromium 衍生子进程
+            ])
+            cls.HEADLESS = True
+            cls.USE_PROXY = True
+            cls.MAX_CONCURRENT_TASKS = 1      # 严格串行抓取，保护内存
+        else:
+            # Windows 或本地桌面环境调试模式
+            cls.HEADLESS = False              # 允许前台弹窗，方便检查滑块或 Cookie
+            cls.USE_PROXY = False             # 走本地宽带
+            cls.MAX_CONCURRENT_TASKS = 2
+            
+        return flags
+
+请谨慎使用此类代码。
+
+2. 数据库设计 (SQLite 跨平台适配)
+
+由于 SQLite 在并发写入时文件会被锁定，Docker 挂载卷的 I/O 延迟较高。AI 编写底层代码时，必须开启 WAL (Write-Ahead Logging) 模式以提升跨平台读写稳定性。
+python
+import sqlite3
+
+def init_db():
+    # 确保 data 目录在各系统下都存在
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    conn = sqlite3.connect(str(DB_PATH))
+    cursor = conn.cursor()
+    
+    # 开启 WAL 模式提高跨平台/容器内的并发读写性能
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS product_monitors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        platform TEXT NOT NULL,          -- 'jd', 'taobao', 'pdd'
+        sku_id TEXT NOT NULL,            -- 唯一样本 ID
+        url TEXT NOT NULL,               -- 完整商品 URL
+        title TEXT,
+        target_price REAL NOT NULL,      -- 心理价
+        last_price REAL,                 -- 最新抓取价
+        highest_price REAL,
+        lowest_price REAL,
+        is_active INTEGER DEFAULT 1,     -- 1:启用, 0:禁用
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(platform, sku_id)
+    );
+    ''')
+    conn.commit()
+    conn.close()
+
+请谨慎使用此类代码。
+
+3. 全自动化容器化方案 (Dockerfile & docker-compose.yml)
+
+因为 Scrapling 基于 Playwright/Chromium 核心，容器中必须预装底层浏览器所需的 Linux 依赖（如 libnss3, libatk 等）。使用精简版 Python 镜像是无法运行的。
+
+🐳 Dockerfile 配置文件
+
+dockerfile
+# 阶段一：使用预装了 Playwright/Chromium 依赖的轻量 Ubuntu/Debian 基础镜像
+FROM python:3.11-slim-bookworm
+
+# 设置容器工作目录与时区
+WORKDIR /app
+ENV TZ=Asia/Shanghai
+ENV PYTHONUNBUFFERED=1
+
+# 安装系统级浏览器运行依赖与必要的工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    gnupg \
+    ca-certificates \
+    libglib2.0-0 \
+    libnss3 \
+    libatk-1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixer3 \
+    librandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖描述文件
+COPY requirements.txt .
+
+# 安装基础依赖与 Scrapling 完整生态
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir "scrapling[all]"
+
+# 核心步骤：预下载 Scrapling 的定制混淆型 Chromium 浏览器
+RUN scrapling install
+
+# 复制项目所有代码
+COPY . .
+
+# 暴露挂载点，持久化你的数据库和本地 Cookie 状态
+VOLUME ["/app/data", "/app/config"]
+
+# 容器启动命令
+CMD ["python", "main.py"]
+请谨慎使用此类代码。
+
+🎛️ docker-compose.yml 部署文件
+
+yaml
+version: '3.8'
+
+services:
+  price-monitor:
+    build: .
+    container_name: shopping_price_monitor
+    restart: always
+    environment:
+      - ENV_MODE=CLOUD               # 硅谷 VPS 运行时保持 CLOUD
+      - GOTIFY_URL=https://your-public-gotify-domain.com
+      - GOTIFY_TOKEN=your-app-token
+      - IGNORE_SSL_ERRORS=True
+    volumes:
+      # 持久化映射：确保容器重启后，数据库中的商品和 Cookie 不丢失
+      - ./data:/app/data
+      - ./config:/app/config
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"              # 限制日志大小，防止塞满服务器硬盘
+        max-file: "3"
+请谨慎使用此类代码。
+
+4. 最终项目目录结构（规范参考）
+
+text
+price_monitor/
+│
+├── config/
+│   └── cookies_store.json    # 手动存储的淘宝/拼多多登录 Cookie
+├── data/
+│   └── monitor.db            # SQLite 数据库文件（自动生成）
+├── src/
+│   ├── __init__.py
+│   ├── config.py             # 跨平台环境与基础配置
+│   ├── database.py           # WAL 模式数据库层
+│   ├── notifier.py           # Gotify 兼容性分级通知器
+│   └── scraper.py            # Scrapling 浏览器驱动与页面解析层
+│
+├── requirements.txt          # 项目依赖（requests, scrapling, apscheduler 等）
+├── Dockerfile                # 容器定义
+├── docker-compose.yml        # 容器集群一键编排
+└── main.py                   # 系统入口与业务定时任务循环
+请谨慎使用此类代码。
+
+💡 复制发送给 AI 的终极督导指令（直接发给 Cursor / Windsurf）
+
+markdown
+请根据我提供的系统设计和全平台兼容规范，结合 Scrapling 框架为我编写一套完整的 Python 电商价格监控系统。代码要求能直接在这三个环境无缝切换：Windows本地调试桌面、Linux原生系统、Docker容器环境。
+
+请你完整实现以下文件架构及具体逻辑：
+
+1. 编写 `src/config.py`：实现能动态识别 Windows、Linux 和 Docker 容器的环境加载器。如果是本地模式，headless=False 并关闭代理；如果是 CLOUD 模式（或检测到在容器内），则自动开启单进程、禁用 shm 缓存、 headless=True 限制极低并发，防海外 2核4G VPS 爆内存，并强制挂载代理。
+2. 编写 `src/database.py`：使用 sqlite3 连接数据库，文件统一放在根目录 `data/` 下。连接时必须执行 `PRAGMA journal_mode=WAL;` 开启 WAL 模式以防止跨平台挂载时文件死锁。
+3. 编写 `src/notifier.py`：封装向公网 Gotify 服务器发送通知的模块。包含 verify 参数（根据 config 中的 IGNORE_SSL_ERRORS 决定是否忽略 SSL 验证错误）。实现分级通知机制（跌破心理价发送 P7 级告警，连续 3 次检测到登录失效/Cookie 过期发送 P9 级紧急干预告警）。
+4. 编写 `src/scraper.py`：利用 Scrapling 的 StealthyFetcher 精准注入 `config/cookies_store.json` 中的各平台 Cookie（注意：注入淘宝 Cookie 前，Scrapling 必须先 fetch 导航到 taobao.com 域，防止跨域错误）。预留出京东、淘宝、拼多多的实时价格解析器骨架（`extract_jd`, `extract_taobao`, `extract_pdd`）。
+5. 编写 `main.py`：系统入口主程序，读取数据库中 active 的商品，通过循环/定时器执行，并包含随机休眠防封机制。
+
+请严格遵守跨平台路径（使用 pathlib ）、防内存开销与 WAL 读写原则，输出结构清晰、无删减、高质量的 Python 代码。
+请谨慎使用此类代码。
