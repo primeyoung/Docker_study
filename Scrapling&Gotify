@@ -6,7 +6,7 @@
 系统通过 ENV_MODE（区分本地/云端）和 RUN_PLATFORM（区分系统架构）进行双维度动态调节。
 
 ⚙️ 环境配置文件 (config.py)
-
+```
 python
 import os
 import sys
@@ -57,13 +57,14 @@ class Config:
             cls.MAX_CONCURRENT_TASKS = 2
             
         return flags
-
+```
 请谨慎使用此类代码。
 
 2. 数据库设计 (SQLite 跨平台适配)
 
 由于 SQLite 在并发写入时文件会被锁定，Docker 挂载卷的 I/O 延迟较高。AI 编写底层代码时，必须开启 WAL (Write-Ahead Logging) 模式以提升跨平台读写稳定性。
 python
+```
 import sqlite3
 
 def init_db():
@@ -95,7 +96,7 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
-
+```
 请谨慎使用此类代码。
 
 3. 全自动化容器化方案 (Dockerfile & docker-compose.yml)
@@ -103,7 +104,7 @@ def init_db():
 因为 Scrapling 基于 Playwright/Chromium 核心，容器中必须预装底层浏览器所需的 Linux 依赖（如 libnss3, libatk 等）。使用精简版 Python 镜像是无法运行的。
 
 🐳 Dockerfile 配置文件
-
+```
 dockerfile
 # 阶段一：使用预装了 Playwright/Chromium 依赖的轻量 Ubuntu/Debian 基础镜像
 FROM python:3.11-slim-bookworm
@@ -156,10 +157,11 @@ VOLUME ["/app/data", "/app/config"]
 
 # 容器启动命令
 CMD ["python", "main.py"]
+```
 请谨慎使用此类代码。
 
 🎛️ docker-compose.yml 部署文件
-
+```
 yaml
 version: '3.8'
 
@@ -182,10 +184,11 @@ services:
       options:
         max-size: "10m"              # 限制日志大小，防止塞满服务器硬盘
         max-file: "3"
+```
 请谨慎使用此类代码。
 
 4. 最终项目目录结构（规范参考）
-
+```
 text
 price_monitor/
 │
@@ -204,10 +207,11 @@ price_monitor/
 ├── Dockerfile                # 容器定义
 ├── docker-compose.yml        # 容器集群一键编排
 └── main.py                   # 系统入口与业务定时任务循环
+```
 请谨慎使用此类代码。
 
 💡 复制发送给 AI 的终极督导指令（直接发给 Cursor / Windsurf）
-
+```
 markdown
 请根据我提供的系统设计和全平台兼容规范，结合 Scrapling 框架为我编写一套完整的 Python 电商价格监控系统。代码要求能直接在这三个环境无缝切换：Windows本地调试桌面、Linux原生系统、Docker容器环境。
 
@@ -220,4 +224,5 @@ markdown
 5. 编写 `main.py`：系统入口主程序，读取数据库中 active 的商品，通过循环/定时器执行，并包含随机休眠防封机制。
 
 请严格遵守跨平台路径（使用 pathlib ）、防内存开销与 WAL 读写原则，输出结构清晰、无删减、高质量的 Python 代码。
+```
 请谨慎使用此类代码。
